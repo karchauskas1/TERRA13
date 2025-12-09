@@ -43,12 +43,25 @@ confirmBtn.addEventListener('click', () => {
         
         // Send data to Telegram bot
         if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
-            Telegram.WebApp.sendData(JSON.stringify(data));
-            Telegram.WebApp.close();
+            try {
+                const dataString = JSON.stringify(data);
+                console.log('Sending data to bot:', dataString);
+                
+                // Отправляем данные
+                Telegram.WebApp.sendData(dataString);
+                
+                // Закрываем приложение сразу после отправки
+                // Telegram автоматически закроет приложение после получения данных
+                Telegram.WebApp.close();
+                
+            } catch (error) {
+                console.error('Error sending data:', error);
+                alert('Ошибка отправки данных: ' + error.message);
+            }
         } else {
             // Fallback for testing
-            console.log('Selected table:', data);
-            alert(`Выбран стол ${selectedTable} в ${selectedZone}`);
+            console.log('Selected table (no Telegram WebApp):', data);
+            alert(`Выбран стол ${selectedTable} в ${selectedZone}\n\n(Веб-приложение работает вне Telegram)`);
         }
     } else {
         alert('Пожалуйста, выберите стол');
