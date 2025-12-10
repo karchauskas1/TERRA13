@@ -91,28 +91,45 @@ document.addEventListener('DOMContentLoaded', () => {
             const dataString = JSON.stringify(data);
             console.log('JSON string:', dataString);
 
-            // Проверяем доступность sendData непосредственно перед вызовом
-            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.sendData) {
-                console.log('Calling sendData...');
-                window.Telegram.WebApp.sendData(dataString);
-                console.log('sendData called successfully - WebApp should close automatically');
+            // ВАЖНО: Проверяем доступность sendData непосредственно перед вызовом
+            if (window.Telegram && window.Telegram.WebApp && typeof window.Telegram.WebApp.sendData === 'function') {
+                console.log('sendData function is available, calling it...');
 
-                // sendData() автоматически закрывает WebApp, но добавим резервный таймер
+                // Вызываем sendData с небольшой задержкой для надежности
                 setTimeout(() => {
-                    console.log('Checking WebApp status after sendData...');
-                    if (window.Telegram && window.Telegram.WebApp) {
-                        console.log('WebApp.closed:', window.Telegram.WebApp.closed);
-                        if (!window.Telegram.WebApp.closed) {
-                            console.log('WebApp still open, closing manually...');
+                    try {
+                        console.log('Executing sendData with data:', dataString);
+                        window.Telegram.WebApp.sendData(dataString);
+                        console.log('sendData executed successfully');
+
+                        // sendData() должен автоматически закрыть WebApp
+                        // Добавляем дополнительную проверку через 500мс
+                        setTimeout(() => {
+                            if (window.Telegram && window.Telegram.WebApp && !window.Telegram.WebApp.closed) {
+                                console.log('WebApp still open after sendData, closing manually...');
+                                window.Telegram.WebApp.close();
+                            }
+                        }, 500);
+
+                    } catch (sendError) {
+                        console.error('Error during sendData execution:', sendError);
+                        // Fallback: отправляем как обычное сообщение
+                        if (window.Telegram && window.Telegram.WebApp) {
+                            console.log('Trying fallback - sending as text message');
+                            // Это не сработает, но попробуем
                             window.Telegram.WebApp.close();
-                        } else {
-                            console.log('WebApp already closed');
                         }
-                    } else {
-                        console.warn('Telegram.WebApp not available for status check');
+                        alert('Ошибка отправки данных. Попробуйте ввести номер стола вручную.');
                     }
-                }, 200);
+                }, 100);
+
             } else {
+                console.error('sendData function not available:', {
+                    windowTelegram: !!window.Telegram,
+                    webApp: !!(window.Telegram && window.Telegram.WebApp),
+                    sendData: !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.sendData),
+                    sendDataType: typeof (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.sendData)
+                });
                 throw new Error('Telegram.WebApp.sendData is not available');
             }
 
@@ -120,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Error in send process:', error);
             confirmBtn.disabled = false;
             confirmBtn.textContent = originalText;
-            alert('Ошибка отправки данных: ' + error.message + '\n\nПопробуйте еще раз.');
+            alert('Ошибка отправки данных: ' + error.message + '\n\nПопробуйте ввести номер стола вручную.');
         }
     });
 });
