@@ -1,15 +1,37 @@
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('=== WEBAPP PAGE LOADED ===');
+    console.log('Timestamp:', new Date().toISOString());
+    console.log('User Agent:', navigator.userAgent);
+    console.log('URL:', window.location.href);
+
     // Инициализация Telegram WebApp
     let isTelegramWebApp = false;
 
     const initTelegram = () => {
+        console.log('=== INITIALIZING TELEGRAM WEBAPP ===');
         if (typeof window !== 'undefined' && window.Telegram && window.Telegram.WebApp) {
             isTelegramWebApp = true;
+            console.log('✅ Telegram WebApp SDK found');
+            console.log('WebApp version:', window.Telegram.WebApp.version);
+            console.log('WebApp platform:', window.Telegram.WebApp.platform);
+            console.log('WebApp initData:', window.Telegram.WebApp.initData);
+            
             window.Telegram.WebApp.ready();
             window.Telegram.WebApp.expand();
-            console.log('Telegram WebApp initialized');
+            console.log('✅ Telegram WebApp initialized and expanded');
+            
+            // Добавляем обработчики событий
+            window.Telegram.WebApp.onEvent('viewportChanged', () => {
+                console.log('WebApp viewport changed');
+            });
+            
+            window.Telegram.WebApp.onEvent('themeChanged', () => {
+                console.log('WebApp theme changed');
+            });
+            
         } else {
-            console.warn('Telegram WebApp not available - running in browser mode');
+            console.warn('❌ Telegram WebApp not available - running in browser mode');
+            console.warn('window.Telegram:', typeof window.Telegram);
         }
     };
 
@@ -22,8 +44,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const tables = document.querySelectorAll('.table');
 
     // Add click handlers to tables
+    console.log(`Found ${tables.length} tables to add click handlers`);
     tables.forEach(table => {
         table.addEventListener('click', () => {
+            console.log('=== TABLE CLICKED ===');
+            const tableId = table.getAttribute('data-table-id');
+            const zone = table.getAttribute('data-zone');
+            console.log('Clicked table ID:', tableId);
+            console.log('Clicked table zone:', zone);
+            
             // Remove previous selection
             tables.forEach(t => t.classList.remove('selected'));
             
@@ -31,15 +60,21 @@ document.addEventListener('DOMContentLoaded', () => {
             table.classList.add('selected');
             
             // Store selected table info
-            selectedTable = table.getAttribute('data-table-id');
-            selectedZone = table.getAttribute('data-zone');
+            selectedTable = tableId;
+            selectedZone = zone;
+            console.log('Selected table stored:', selectedTable, selectedZone);
             
             // Show confirmation section
             const selectedInfo = document.getElementById('selected-info');
             const selectedTableSpan = document.getElementById('selected-table');
             
-            selectedInfo.classList.remove('hidden');
-            selectedTableSpan.textContent = `Стол ${selectedTable} (${selectedZone})`;
+            if (selectedInfo && selectedTableSpan) {
+                selectedInfo.classList.remove('hidden');
+                selectedTableSpan.textContent = `Стол ${selectedTable} (${selectedZone})`;
+                console.log('Confirmation section shown');
+            } else {
+                console.error('Cannot find selected-info or selected-table elements');
+            }
         });
     });
 
@@ -92,31 +127,55 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('JSON string:', dataString);
 
             // ВАЖНО: Проверяем доступность sendData непосредственно перед вызовом
+            console.log('=== CHECKING sendData AVAILABILITY ===');
+            console.log('window.Telegram exists:', !!window.Telegram);
+            console.log('window.Telegram.WebApp exists:', !!(window.Telegram && window.Telegram.WebApp));
+            console.log('sendData type:', typeof (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.sendData));
+            
             if (window.Telegram && window.Telegram.WebApp && typeof window.Telegram.WebApp.sendData === 'function') {
-                console.log('sendData function is available, calling it...');
+                console.log('✅ sendData function is available, calling it...');
+                console.log('Data to send (string):', dataString);
+                console.log('Data length:', dataString.length, 'bytes');
 
                 // Вызываем sendData с небольшой задержкой для надежности
                 setTimeout(() => {
                     try {
-                        console.log('Executing sendData with data:', dataString);
+                        console.log('=== EXECUTING sendData ===');
+                        console.log('Timestamp:', new Date().toISOString());
+                        console.log('Calling window.Telegram.WebApp.sendData()...');
+                        
                         window.Telegram.WebApp.sendData(dataString);
-                        console.log('sendData executed successfully');
+                        
+                        console.log('✅ sendData() called successfully - no errors thrown');
+                        console.log('WebApp should close automatically now');
 
                         // sendData() должен автоматически закрыть WebApp
                         // Добавляем дополнительную проверку через 500мс
                         setTimeout(() => {
-                            if (window.Telegram && window.Telegram.WebApp && !window.Telegram.WebApp.closed) {
-                                console.log('WebApp still open after sendData, closing manually...');
-                                window.Telegram.WebApp.close();
+                            console.log('=== CHECKING WEBAPP STATUS AFTER 500ms ===');
+                            if (window.Telegram && window.Telegram.WebApp) {
+                                console.log('WebApp.closed:', window.Telegram.WebApp.closed);
+                                if (!window.Telegram.WebApp.closed) {
+                                    console.log('⚠️ WebApp still open after sendData, closing manually...');
+                                    window.Telegram.WebApp.close();
+                                    console.log('Manual close() called');
+                                } else {
+                                    console.log('✅ WebApp closed automatically');
+                                }
+                            } else {
+                                console.warn('⚠️ Telegram.WebApp not available for status check');
                             }
                         }, 500);
 
                     } catch (sendError) {
-                        console.error('Error during sendData execution:', sendError);
+                        console.error('❌ ERROR during sendData execution:', sendError);
+                        console.error('Error name:', sendError.name);
+                        console.error('Error message:', sendError.message);
+                        console.error('Error stack:', sendError.stack);
+                        
                         // Fallback: отправляем как обычное сообщение
                         if (window.Telegram && window.Telegram.WebApp) {
-                            console.log('Trying fallback - sending as text message');
-                            // Это не сработает, но попробуем
+                            console.log('Trying fallback - closing WebApp manually');
                             window.Telegram.WebApp.close();
                         }
                         alert('Ошибка отправки данных. Попробуйте ввести номер стола вручную.');
