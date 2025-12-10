@@ -84,16 +84,19 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Отправляем данные в бот
             if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.sendData) {
+                console.log('Sending data to bot:', dataString);
                 window.Telegram.WebApp.sendData(dataString);
                 console.log('Data sent via Telegram.WebApp.sendData()');
-                
-                // Закрываем приложение (даём чуть больше времени)
+
+                // sendData() автоматически закрывает WebApp, не нужно вызывать close()
+                // Если данные не отправляются, попробуем подождать чуть-чуть
                 setTimeout(() => {
-                    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.close) {
+                    console.log('Checking if WebApp is still open...');
+                    if (window.Telegram && window.Telegram.WebApp && !window.Telegram.WebApp.closed) {
+                        console.log('WebApp still open, closing manually');
                         window.Telegram.WebApp.close();
-                        console.log('WebApp closed');
                     }
-                }, 200);
+                }, 100);
             } else {
                 throw new Error('Telegram.WebApp.sendData is not available');
             }
