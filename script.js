@@ -46,63 +46,78 @@ document.addEventListener('DOMContentLoaded', () => {
     // Confirm button handler
     const confirmBtn = document.getElementById('confirm-btn');
     confirmBtn.addEventListener('click', () => {
+        console.log('=== CONFIRM BUTTON CLICKED ===');
+        console.log('selectedTable:', selectedTable, 'selectedZone:', selectedZone);
+
         // Переинициализируем, если Telegram вдруг не был доступен при загрузке
         initTelegram();
+        console.log('Telegram WebApp re-initialized');
 
         if (!selectedTable || !selectedZone) {
+            console.warn('No table or zone selected');
             if (!isTelegramWebApp) {
                 alert('Пожалуйста, выберите стол');
             }
             return;
         }
-        
+
         const data = {
             table_id: selectedTable,
             zone: selectedZone
         };
-        
-        console.log('Confirm button clicked, selected:', data);
+
+        console.log('Data to send:', data);
         console.log('isTelegramWebApp:', isTelegramWebApp);
-        
+        console.log('window.Telegram:', !!window.Telegram);
+        console.log('window.Telegram.WebApp:', !!(window.Telegram && window.Telegram.WebApp));
+        console.log('window.Telegram.WebApp.sendData:', !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.sendData));
+
         // Если не в Telegram WebApp, выводим минимальное предупреждение
         if (!isTelegramWebApp) {
-            console.warn('Not in Telegram WebApp');
+            console.warn('Not in Telegram WebApp - cannot send data');
             alert('Откройте ссылку из Telegram, чтобы отправить бронирование.');
             confirmBtn.disabled = false;
             confirmBtn.textContent = 'Подтвердить выбор';
             return;
         }
-        
+
         // Отключаем кнопку, чтобы предотвратить повторные нажатия
         confirmBtn.disabled = true;
         const originalText = confirmBtn.textContent;
         confirmBtn.textContent = 'Отправка...';
-        
+        console.log('Button disabled, starting send process');
+
         try {
             const dataString = JSON.stringify(data);
-            console.log('Sending data to bot:', dataString);
-            
-            // Отправляем данные в бот
-            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.sendData) {
-                console.log('Sending data to bot:', dataString);
-                window.Telegram.WebApp.sendData(dataString);
-                console.log('Data sent via Telegram.WebApp.sendData()');
+            console.log('JSON string:', dataString);
 
-                // sendData() автоматически закрывает WebApp, не нужно вызывать close()
-                // Если данные не отправляются, попробуем подождать чуть-чуть
+            // Проверяем доступность sendData непосредственно перед вызовом
+            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.sendData) {
+                console.log('Calling sendData...');
+                window.Telegram.WebApp.sendData(dataString);
+                console.log('sendData called successfully - WebApp should close automatically');
+
+                // sendData() автоматически закрывает WebApp, но добавим резервный таймер
                 setTimeout(() => {
-                    console.log('Checking if WebApp is still open...');
-                    if (window.Telegram && window.Telegram.WebApp && !window.Telegram.WebApp.closed) {
-                        console.log('WebApp still open, closing manually');
-                        window.Telegram.WebApp.close();
+                    console.log('Checking WebApp status after sendData...');
+                    if (window.Telegram && window.Telegram.WebApp) {
+                        console.log('WebApp.closed:', window.Telegram.WebApp.closed);
+                        if (!window.Telegram.WebApp.closed) {
+                            console.log('WebApp still open, closing manually...');
+                            window.Telegram.WebApp.close();
+                        } else {
+                            console.log('WebApp already closed');
+                        }
+                    } else {
+                        console.warn('Telegram.WebApp not available for status check');
                     }
-                }, 100);
+                }, 200);
             } else {
                 throw new Error('Telegram.WebApp.sendData is not available');
             }
-            
+
         } catch (error) {
-            console.error('Error sending data:', error);
+            console.error('Error in send process:', error);
             confirmBtn.disabled = false;
             confirmBtn.textContent = originalText;
             alert('Ошибка отправки данных: ' + error.message + '\n\nПопробуйте еще раз.');
