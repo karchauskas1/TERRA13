@@ -39,6 +39,77 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let selectedTable = null;
     let selectedZone = null;
+    let bookedTables = [];
+
+    // Получение параметров из URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const date = urlParams.get('date');
+    const time = urlParams.get('time');
+    const userId = urlParams.get('user_id');
+    const gasApiUrl = urlParams.get('gas_api_url');
+    const gasApiToken = urlParams.get('gas_api_token');
+
+    console.log('URL parameters:', { date, time, userId, gasApiUrl: gasApiUrl ? 'present' : 'missing' });
+
+    // Функция для получения забронированных столиков
+    const fetchBookedTables = async () => {
+        if (!date || !time) {
+            console.warn('Date or time not provided, skipping booked tables check');
+            return;
+        }
+
+        if (!gasApiUrl || !gasApiToken) {
+            console.warn('GAS API URL or token not provided, skipping booked tables check');
+            return;
+        }
+
+        try {
+            console.log('Fetching booked tables for date:', date, 'time:', time);
+            
+            // Запрос к GAS API
+            const apiUrl = `${gasApiUrl}?action=get_booked_tables&token=${encodeURIComponent(gasApiToken)}&date=${encodeURIComponent(date)}&time=${encodeURIComponent(time)}`;
+            
+            console.log('API URL (sanitized):', apiUrl.replace(/token=[^&]+/, 'token=***'));
+            
+            const response = await fetch(apiUrl);
+            const result = await response.json();
+            
+            console.log('Booked tables response:', result);
+            
+            if (result.ok && result.booked_tables) {
+                bookedTables = result.booked_tables.map(t => t.toString());
+                console.log('Booked tables:', bookedTables);
+                updateTableAvailability();
+            } else {
+                console.warn('Failed to get booked tables:', result.error);
+            }
+        } catch (error) {
+            console.error('Error fetching booked tables:', error);
+            // Продолжаем работу, просто не блокируем столики
+        }
+    };
+
+    // Функция для обновления доступности столиков
+    const updateTableAvailability = () => {
+        const tables = document.querySelectorAll('.table');
+        tables.forEach(table => {
+            const tableId = table.getAttribute('data-table-id');
+            if (bookedTables.includes(tableId)) {
+                table.classList.add('booked');
+                table.classList.remove('selected');
+                table.style.cursor = 'not-allowed';
+                console.log(`Table ${tableId} is booked`);
+            } else {
+                table.classList.remove('booked');
+                table.style.cursor = 'pointer';
+            }
+        });
+    };
+
+    // Загружаем забронированные столики при загрузке страницы
+    if (date && time) {
+        fetchBookedTables();
+    }
 
     // Get all table elements
     const tables = document.querySelectorAll('.table');
@@ -52,6 +123,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const zone = table.getAttribute('data-zone');
             console.log('Clicked table ID:', tableId);
             console.log('Clicked table zone:', zone);
+            
+            // Проверяем, не занят ли стол
+            if (bookedTables.includes(tableId)) {
+                console.warn('Table is booked, cannot select');
+                alert('Этот стол уже забронирован на выбранное время. Пожалуйста, выберите другой стол.');
+                return;
+            }
             
             // Remove previous selection
             tables.forEach(t => t.classList.remove('selected'));
