@@ -158,9 +158,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Confirm button handler
     const confirmBtn = document.getElementById('confirm-btn');
+    let isSending = false; // Флаг для предотвращения повторной отправки
+    
     confirmBtn.addEventListener('click', () => {
         console.log('=== CONFIRM BUTTON CLICKED ===');
         console.log('selectedTable:', selectedTable, 'selectedZone:', selectedZone);
+        console.log('isSending:', isSending);
+
+        // Предотвращаем повторную отправку
+        if (isSending) {
+            console.warn('Already sending, ignoring click');
+            return;
+        }
 
         // Переинициализируем, если Telegram вдруг не был доступен при загрузке
         initTelegram();
@@ -174,12 +183,16 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // Убеждаемся, что table_id - строка
         const data = {
-            table_id: selectedTable,
-            zone: selectedZone
+            table_id: String(selectedTable),
+            zone: String(selectedZone)
         };
 
+        console.log('=== PREPARING TO SEND DATA ===');
         console.log('Data to send:', data);
+        console.log('Selected table:', selectedTable, 'type:', typeof selectedTable);
+        console.log('Selected zone:', selectedZone, 'type:', typeof selectedZone);
         console.log('isTelegramWebApp:', isTelegramWebApp);
         console.log('window.Telegram:', !!window.Telegram);
         console.log('window.Telegram.WebApp:', !!(window.Telegram && window.Telegram.WebApp));
@@ -194,7 +207,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Отключаем кнопку, чтобы предотвратить повторные нажатия
+        // Отключаем кнопку и устанавливаем флаг, чтобы предотвратить повторные нажатия
+        isSending = true;
         confirmBtn.disabled = true;
         const originalText = confirmBtn.textContent;
         confirmBtn.textContent = 'Отправка...';
@@ -202,7 +216,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const dataString = JSON.stringify(data);
+            console.log('=== JSON STRINGIFY ===');
             console.log('JSON string:', dataString);
+            console.log('JSON string length:', dataString.length);
+            console.log('JSON string type:', typeof dataString);
+            
+            // Проверяем, что JSON валидный
+            try {
+                const testParse = JSON.parse(dataString);
+                console.log('✅ JSON is valid, parsed back:', testParse);
+            } catch (e) {
+                console.error('❌ JSON is invalid!', e);
+                throw new Error('Invalid JSON data');
+            }
 
             // ВАЖНО: Проверяем доступность sendData непосредственно перед вызовом
             console.log('=== CHECKING sendData AVAILABILITY ===');
@@ -251,6 +277,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         console.error('Error message:', sendError.message);
                         console.error('Error stack:', sendError.stack);
                         
+                        // Сбрасываем флаг и кнопку
+                        isSending = false;
+                        confirmBtn.disabled = false;
+                        confirmBtn.textContent = originalText;
+                        
                         // Fallback: отправляем как обычное сообщение
                         if (window.Telegram && window.Telegram.WebApp) {
                             console.log('Trying fallback - closing WebApp manually');
@@ -272,6 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error('Error in send process:', error);
+            isSending = false;
             confirmBtn.disabled = false;
             confirmBtn.textContent = originalText;
             alert('Ошибка отправки данных: ' + error.message + '\n\nПопробуйте ввести номер стола вручную.');
