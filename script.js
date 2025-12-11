@@ -250,62 +250,28 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('sendData type:', typeof (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.sendData));
             
             if (window.Telegram && window.Telegram.WebApp && typeof window.Telegram.WebApp.sendData === 'function') {
-                console.log('=== SENDING DATA TO TELEGRAM ===');
-                console.log('✅ sendData function is available, calling it...');
+                console.log('=== SENDING DATA TO TELEGRAM (NO DELAY) ===');
                 console.log('Data to send (string):', dataString);
-                console.log('Data length:', dataString.length, 'bytes');
                 console.log('Table ID:', selectedTable);
                 console.log('Zone:', selectedZone);
 
-                // Вызываем sendData с небольшой задержкой для надежности
-                setTimeout(() => {
-                    try {
-                        console.log('=== EXECUTING sendData ===');
-                        console.log('Timestamp:', new Date().toISOString());
-                        console.log('Calling window.Telegram.WebApp.sendData()...');
-                        
-                        window.Telegram.WebApp.sendData(dataString);
-                        
-                        console.log('✅ sendData() called successfully - no errors thrown');
-                        console.log('WebApp should close automatically now');
-
-                        // sendData() должен автоматически закрыть WebApp
-                        // Добавляем дополнительную проверку через 500мс
-                        setTimeout(() => {
-                            console.log('=== CHECKING WEBAPP STATUS AFTER 500ms ===');
-                            if (window.Telegram && window.Telegram.WebApp) {
-                                console.log('WebApp.closed:', window.Telegram.WebApp.closed);
-                                if (!window.Telegram.WebApp.closed) {
-                                    console.log('⚠️ WebApp still open after sendData, closing manually...');
-                                    window.Telegram.WebApp.close();
-                                    console.log('Manual close() called');
-                                } else {
-                                    console.log('✅ WebApp closed automatically');
-                                }
-                            } else {
-                                console.warn('⚠️ Telegram.WebApp not available for status check');
-                            }
-                        }, 500);
-
-                    } catch (sendError) {
-                        console.error('❌ ERROR during sendData execution:', sendError);
-                        console.error('Error name:', sendError.name);
-                        console.error('Error message:', sendError.message);
-                        console.error('Error stack:', sendError.stack);
-                        
-                        // Сбрасываем флаг и кнопку
-                        isSending = false;
-                        confirmBtn.disabled = false;
-                        confirmBtn.textContent = originalText;
-                        
-                        // Fallback: отправляем как обычное сообщение
-                        if (window.Telegram && window.Telegram.WebApp) {
-                            console.log('Trying fallback - closing WebApp manually');
-                            window.Telegram.WebApp.close();
-                        }
-                        alert('Ошибка отправки данных. Попробуйте ввести номер стола вручную.');
-                    }
-                }, 100);
+                try {
+                    window.Telegram.WebApp.sendData(dataString);
+                    console.log('✅ sendData() called successfully - closing WebApp');
+                    window.Telegram.WebApp.close();
+                } catch (sendError) {
+                    console.error('❌ ERROR during sendData execution:', sendError);
+                    console.error('Error name:', sendError.name);
+                    console.error('Error message:', sendError.message);
+                    console.error('Error stack:', sendError.stack);
+                    
+                    // Сбрасываем флаг и кнопку
+                    isSending = false;
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = originalText;
+                    
+                    alert('Ошибка отправки данных. Попробуйте ввести номер стола вручную.');
+                }
 
             } else {
                 console.error('sendData function not available:', {
