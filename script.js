@@ -49,6 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let selectedTable = null;
     let selectedZone = null;
     let bookedTables = [];
+    let tableAvailability = {}; // {tableId: availableMinutes}
 
     // Получение параметров из URL
     const urlParams = new URLSearchParams(window.location.search);
@@ -87,7 +88,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (result.ok && result.booked_tables) {
                 bookedTables = result.booked_tables.map(t => t.toString());
+                tableAvailability = result.table_availability || {};
                 console.log('Booked tables:', bookedTables);
+                console.log('Table availability (minutes):', tableAvailability);
                 updateTableAvailability();
             } else {
                 console.warn('Failed to get booked tables:', result.error);
@@ -103,7 +106,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const tables = document.querySelectorAll('.table');
         tables.forEach(table => {
             const tableId = table.getAttribute('data-table-id');
+            
+            // Удаляем предыдущие индикаторы доступности
+            const existingAvailability = table.querySelector('.table-availability');
+            if (existingAvailability) {
+                existingAvailability.remove();
+            }
+            
             if (bookedTables.includes(tableId)) {
+                // Стол забронирован
                 table.classList.add('booked');
                 table.classList.remove('selected');
                 table.style.cursor = 'not-allowed';
@@ -111,6 +122,31 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 table.classList.remove('booked');
                 table.style.cursor = 'pointer';
+                
+                // Показываем доступное время, если есть будущая бронь
+                if (tableAvailability[tableId] && tableAvailability[tableId] > 0) {
+                    const availableMinutes = tableAvailability[tableId];
+                    const availableHours = Math.floor(availableMinutes / 60);
+                    const remainingMinutes = availableMinutes % 60;
+                    
+                    let availabilityText = '';
+                    if (availableHours > 0) {
+                        availabilityText = `${availableHours} ч`;
+                        if (remainingMinutes > 0) {
+                            availabilityText += ` ${remainingMinutes} м`;
+                        }
+                    } else {
+                        availabilityText = `${remainingMinutes} м`;
+                    }
+                    
+                    // Создаем элемент для отображения времени доступности
+                    const availabilityEl = document.createElement('span');
+                    availabilityEl.className = 'table-availability';
+                    availabilityEl.textContent = `⏱ ${availabilityText}`;
+                    table.appendChild(availabilityEl);
+                    
+                    console.log(`Table ${tableId} available for ${availableMinutes} minutes (${availabilityText})`);
+                }
             }
         });
     };
