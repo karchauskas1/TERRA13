@@ -157,7 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (selectedInfo && selectedTableSpan) {
                 selectedInfo.classList.remove('hidden');
-                selectedTableSpan.textContent = `Стол ${selectedTable} (${selectedZone})`;
+                selectedTableSpan.textContent = `Стол ${selectedTable}`;
                 console.log('Confirmation section shown');
             } else {
                 console.error('Cannot find selected-info or selected-table elements');
@@ -184,28 +184,35 @@ document.addEventListener('DOMContentLoaded', () => {
         initTelegram();
         console.log('Telegram WebApp re-initialized');
 
-        if (!selectedTable || !selectedZone) {
-            console.warn('No table or zone selected');
-            if (!isTelegramWebApp) {
-                alert('Пожалуйста, выберите стол');
-            }
+        if (!selectedTable) {
+            console.warn('No table selected');
+            alert('Пожалуйста, выберите стол');
             return;
         }
 
         // Убеждаемся, что table_id - строка
         const data = {
             table_id: String(selectedTable),
-            zone: String(selectedZone)
+            zone: String(selectedZone || 'Основная')
         };
 
         console.log('=== PREPARING TO SEND DATA ===');
         console.log('Data to send:', data);
-        console.log('Selected table:', selectedTable, 'type:', typeof selectedTable);
-        console.log('Selected zone:', selectedZone, 'type:', typeof selectedZone);
+        console.log('Selected table:', selectedTable);
         console.log('isTelegramWebApp:', isTelegramWebApp);
         console.log('window.Telegram:', !!window.Telegram);
         console.log('window.Telegram.WebApp:', !!(window.Telegram && window.Telegram.WebApp));
         console.log('window.Telegram.WebApp.sendData:', !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.sendData));
+        
+        // КРИТИЧЕСКАЯ ПРОВЕРКА: убеждаемся что мы в Telegram
+        if (!window.Telegram || !window.Telegram.WebApp) {
+            console.error('❌ CRITICAL: Not in Telegram WebApp!');
+            alert('❌ Ошибка: веб-приложение должно быть открыто из Telegram!');
+            isSending = false;
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = originalText;
+            return;
+        }
 
         // Если не в Telegram WebApp, выводим предупреждение
         if (!isTelegramWebApp) {
