@@ -95,6 +95,39 @@ h1 {
     color: rgba(255, 255, 255, 0.9);
 }
 
+.table.booked {
+    background: #e0e0e0;
+    border-color: #999;
+    opacity: 0.6;
+    cursor: not-allowed !important;
+    position: relative;
+}
+
+.table.booked::after {
+    content: '✗';
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    color: #d32f2f;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.table.booked:hover {
+    transform: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-color: #999;
+}
+
+.table.booked .table-number {
+    color: #999;
+    text-decoration: line-through;
+}
+
+.table.booked .table-seats {
+    color: #999;
+}
+
 #selected-info {
     margin-top: 30px;
     padding: 20px;
@@ -155,4 +188,8 @@ h1 {
         font-size: 24px;
     }
 }
+
+
+
+
 
