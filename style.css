@@ -105,6 +105,22 @@ h1 {
     text-decoration: line-through;
 }
 
+.table-availability {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(76, 175, 80, 0.9);
+    color: white;
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    white-space: nowrap;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 10;
+}
+
 .table.booked .table-seats {
     color: #999;
 }
@@ -169,8 +185,3 @@ h1 {
         font-size: 24px;
     }
 }
-
-
-
-
-
