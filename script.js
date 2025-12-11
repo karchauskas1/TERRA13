@@ -1,8 +1,17 @@
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('='.repeat(60));
     console.log('=== WEBAPP PAGE LOADED ===');
     console.log('Timestamp:', new Date().toISOString());
     console.log('User Agent:', navigator.userAgent);
     console.log('URL:', window.location.href);
+    console.log('='.repeat(60));
+    
+    // Показываем пользователю предупреждение, если открыто не из Telegram
+    if (!window.Telegram || !window.Telegram.WebApp) {
+        console.warn('⚠️ ВНИМАНИЕ: Веб-приложение открыто не из Telegram!');
+        console.warn('   Логи доступны в консоли браузера (F12 -> Console)');
+        console.warn('   Для работы откройте ссылку из Telegram бота');
+    }
 
     // Инициализация Telegram WebApp
     let isTelegramWebApp = false;
@@ -198,10 +207,14 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('window.Telegram.WebApp:', !!(window.Telegram && window.Telegram.WebApp));
         console.log('window.Telegram.WebApp.sendData:', !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.sendData));
 
-        // Если не в Telegram WebApp, выводим минимальное предупреждение
+        // Если не в Telegram WebApp, выводим предупреждение
         if (!isTelegramWebApp) {
-            console.warn('Not in Telegram WebApp - cannot send data');
-            alert('Откройте ссылку из Telegram, чтобы отправить бронирование.');
+            console.warn('=== NOT IN TELEGRAM WEBAPP ===');
+            console.warn('window.Telegram:', typeof window.Telegram);
+            console.warn('window.Telegram.WebApp:', !!(window.Telegram && window.Telegram.WebApp));
+            alert('⚠️ Откройте ссылку из Telegram, чтобы отправить бронирование.\n\n'
+                  + 'Вы открыли веб-приложение не из Telegram, поэтому данные не могут быть отправлены.');
+            isSending = false;
             confirmBtn.disabled = false;
             confirmBtn.textContent = 'Подтвердить выбор';
             return;
@@ -237,9 +250,12 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('sendData type:', typeof (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.sendData));
             
             if (window.Telegram && window.Telegram.WebApp && typeof window.Telegram.WebApp.sendData === 'function') {
+                console.log('=== SENDING DATA TO TELEGRAM ===');
                 console.log('✅ sendData function is available, calling it...');
                 console.log('Data to send (string):', dataString);
                 console.log('Data length:', dataString.length, 'bytes');
+                console.log('Table ID:', selectedTable);
+                console.log('Zone:', selectedZone);
 
                 // Вызываем sendData с небольшой задержкой для надежности
                 setTimeout(() => {
